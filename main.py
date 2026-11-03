@@ -35,17 +35,7 @@ def compute_bmi(weight: int, height: int):
         status, level = '비만', 'obese'
         message = '건강을 위해 식단과 운동 관리를 권해요. 걱정 말고 천천히 시작해요.'
 
-    m = height / 100
-    min_weight = round(18.5 * m ** 2, 1)  
-    max_weight = round(22.9 * m ** 2, 1)  
-    if weight < min_weight:
-        diff = round(min_weight - weight, 1)    
-    elif weight > max_weight:
-        diff = round(max_weight - weight, 1)    
-    else:
-        diff = 0
-
-    pos = round(min(max((bmi - 15) / 20, 0), 1) * 100, 1)
+    min_weight, max_weight, diff, pos = compute_etc(height, weight, bmi)
 
     return {
         'bmi': bmi,
@@ -60,4 +50,18 @@ def compute_bmi(weight: int, height: int):
         'pos': pos,
     }
 
+def compute_etc(height: int, weight: int, bmi: int):
+    m = height / 100
+    min_weight = round(18.5 * m ** 2, 1)  
+    max_weight = round(22.9 * m ** 2, 1)  
+    
+    if weight < min_weight:
+        diff = round(min_weight - weight, 1)    
+    elif weight > max_weight:
+        diff = round(max_weight - weight, 1)    
+    else:
+        diff = 0
 
+    pos = round(min(max((bmi - 15) / 20, 0), 1) * 100, 1)
+
+    return min_weight, max_weight, diff, pos
