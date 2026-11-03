@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI 계산기</title>
+    <style>
+        :root {
+            --mint: #5eead4;
+            --sky: #38bdf8;
+            --violet: #a78bfa;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 32px 16px;
+            font-family: "Pretendard", "Segoe UI", "Malgun Gothic", sans-serif;
+            color: #fff;
+            background:
+                radial-gradient(ellipse at 15% 10%, rgba(167,139,250,.55), transparent 55%),
+                radial-gradient(ellipse at 90% 20%, rgba(56,189,248,.45), transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(94,234,212,.35), transparent 55%),
+                #0a1024;
+            background-attachment: fixed;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 440px;
+            padding: 36px 30px 32px;
+            border-radius: 30px;
+            background: linear-gradient(160deg, rgba(255,255,255,.16), rgba(255,255,255,.04));
+            border: 1px solid rgba(255,255,255,.22);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 30px 70px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.3);
+            animation: rise .8s cubic-bezier(.2,.8,.2,1);
+        }
+        @keyframes rise { from { opacity: 0; transform: translateY(30px); } }
+
+        header { text-align: center; margin-bottom: 30px; }
+        .eyebrow {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(94,234,212,.5);
+            background: rgba(94,234,212,.1);
+            color: var(--mint);
+            font-size: .72rem;
+            letter-spacing: .3em;
+        }
+        h1 {
+            margin: 14px 0 6px;
+            font-size: clamp(2.4rem, 10vw, 3.2rem);
+            font-weight: 900;
+            letter-spacing: .06em;
+            background: linear-gradient(100deg, var(--mint), var(--sky), var(--violet), var(--mint));
+            background-size: 250% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: shimmer 5s linear infinite;
+        }
+        @keyframes shimmer { to { background-position: -250% 0; } }
+        .subtitle { opacity: .7; font-size: .95rem; }
+
+        /* ===== 입력 필드 ===== */
+        .field { margin-bottom: 26px; }
+        .field-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .field-head label { font-weight: 700; letter-spacing: .08em; font-size: .95rem; }
+
+        .input-wrap {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            padding: 4px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,.25);
+            background: rgba(255,255,255,.08);
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .input-wrap:focus-within {
+            border-color: var(--sky);
+            box-shadow: 0 0 0 4px rgba(56,189,248,.2);
+        }
+        .input-wrap input[type=number] {
+            width: 70px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: #fff;
+            font: inherit;
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-align: right;
+            -moz-appearance: textfield;
+        }
+        .input-wrap input[type=number]::-webkit-outer-spin-button,
+        .input-wrap input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .unit { opacity: .7; font-weight: 700; }
+
+        /* 슬라이더 */
+        input[type=range] {
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            appearance: none;
+            -webkit-appearance: none;
+            outline: none;
+            background: linear-gradient(90deg, var(--mint) var(--p, 50%), rgba(255,255,255,.18) var(--p, 50%));
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #fff, #c7f9f0);
+            box-shadow: 0 4px 14px rgba(0,0,0,.45), 0 0 0 5px rgba(94,234,212,.35);
+            transition: transform .15s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-moz-range-thumb {
+            width: 26px; height: 26px; border: none;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 4px 14px rgba(0,0,0,.45), 0 0 0 5px rgba(94,234,212,.35);
+        }
+
+        /* ===== 실시간 미리보기 ===== */
+        .preview {
+            margin: 8px 0 26px;
+            padding: 18px 18px 20px;
+            border-radius: 20px;
+            background: rgba(0,0,0,.22);
+            border: 1px solid rgba(255,255,255,.12);
+            text-align: center;
+        }
+        .preview-label { font-size: .75rem; letter-spacing: .25em; opacity: .6; }
+        .preview-value { margin: 6px 0 2px; font-size: 2.6rem; font-weight: 900; }
+        .preview-status { font-weight: 800; font-size: 1rem; transition: color .3s; }
+
+        /* 구간 바: 색수차/단차 착시가 절대 생기지 않는 스무스 그라데이션 + 구간 눈금선 */
+        .bar {
+            position: relative;
+            height: 10px;
+            margin-top: 18px;
+            border-radius: 999px;
+            background:
+                /* 17.5%, 40%, 50% 지점에 얇은 눈금선 표시 */
+                linear-gradient(90deg,
+                    transparent calc(17.5% - 1px), rgba(10, 16, 36, 0.7) calc(17.5% - 1px), rgba(10, 16, 36, 0.7) calc(17.5% + 1px), transparent calc(17.5% + 1px),
+                    transparent calc(40% - 1px),   rgba(10, 16, 36, 0.7) calc(40% - 1px),   rgba(10, 16, 36, 0.7) calc(40% + 1px),   transparent calc(40% + 1px),
+                    transparent calc(50% - 1px),   rgba(10, 16, 36, 0.7) calc(50% - 1px),   rgba(10, 16, 36, 0.7) calc(50% + 1px),   transparent calc(50% + 1px)
+                ),
+                /* 색상이 부드럽게 이어져서 옆 칸과의 단차 착시가 발생하지 않음 */
+                linear-gradient(90deg,
+                    #38bdf8 0%,
+                    #38bdf8 14%,
+                    #4ade80 22%,
+                    #4ade80 36%,
+                    #facc15 44%,
+                    #facc15 47%,
+                    #f87171 55%,
+                    #f87171 100%
+                );
+            /* 밝은 외곽선으로 위아래 수평 기준선을 눈에 명확히 각인 */
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28);
+        }
+
+        .marker {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #0a1024;
+            box-shadow: 0 2px 10px rgba(0,0,0,.5);
+            transform: translate(-50%, -50%);
+            transition: left .35s cubic-bezier(.34,1.56,.64,1);
+        }
+
+        /* 라벨은 색 구간과 같은 폭으로 정렬 */
+        .bar-labels {
+            display: flex;
+            margin-top: 8px;
+            font-size: .68rem;
+            opacity: .55;
+            text-align: center;
+        }
+        .bar-labels span { white-space: nowrap; }
+        .bar-labels span:nth-child(1) { width: 17.5%; }
+        .bar-labels span:nth-child(2) { width: 22.5%; }
+        .bar-labels span:nth-child(3) { width: 10%; }
+        .bar-labels span:nth-child(4) { width: 50%; }
+
+        /* ===== 버튼 ===== */
+        .submit {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 999px;
+            font: inherit;
+            font-size: 1.1rem;
+            font-weight: 900;
+            letter-spacing: .12em;
+            color: #06222b;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--mint), var(--sky) 60%, var(--violet));
+            box-shadow: 0 12px 30px rgba(56,189,248,.4), inset 0 2px 0 rgba(255,255,255,.5);
+            transition: transform .2s, box-shadow .2s;
+        }
+        .submit:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 18px 40px rgba(56,189,248,.55), inset 0 2px 0 rgba(255,255,255,.5); }
+        .submit:active { transform: translateY(0) scale(.99); }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <header>
+            <span class="eyebrow">BODY CHECK</span>
+            <h1>BMI</h1>
+            <p class="subtitle">키와 몸무게로 내 체질량지수 확인하기</p>
+        </header>
+
+        <form action="/bmi/print">
+            <div class="field">
+                <div class="field-head">
+                    <label for="height">키</label>
+                    <div class="input-wrap">
+                        <input type="number" id="height" name="height" min="30" max="250" value="170" required>
+                        <span class="unit">cm</span>
+                    </div>
+                </div>
+                <input type="range" id="height-range" min="30" max="250" value="170" aria-label="키 슬라이더">
+            </div>
+
+            <div class="field">
+                <div class="field-head">
+                    <label for="weight">몸무게</label>
+                    <div class="input-wrap">
+                        <input type="number" id="weight" name="weight" min="10" max="300" value="65" required>
+                        <span class="unit">kg</span>
+                    </div>
+                </div>
+                <input type="range" id="weight-range" min="10" max="300" value="65" aria-label="몸무게 슬라이더">
+            </div>
+
+            <div class="preview">
+                <div class="preview-label">LIVE PREVIEW</div>
+                <div class="preview-value" id="pv-bmi">--</div>
+                <div class="preview-status" id="pv-status">&nbsp;</div>
+                <div class="bar">
+                    <div class="marker" id="marker"></div>
+                </div>
+                <div class="bar-labels"><span>저체중</span><span>정상</span><span>과체중</span><span>비만</span></div>
+            </div>
+
+            <button type="submit" class="submit">계산하기</button>
+        </form>
+    </main>
+
+    <script>
+        const pairs = [
+            { num: document.getElementById('height'), range: document.getElementById('height-range') },
+            { num: document.getElementById('weight'), range: document.getElementById('weight-range') },
+        ];
+
+        function fill(range) {
+            const p = (range.value - range.min) / (range.max - range.min) * 100;
+            range.style.setProperty('--p', p + '%');
+        }
+
+        function preview() {
+            const h = Number(pairs[0].num.value);
+            const w = Number(pairs[1].num.value);
+            const bmiEl = document.getElementById('pv-bmi');
+            const statusEl = document.getElementById('pv-status');
+            const marker = document.getElementById('marker');
+            if (!h || !w) { bmiEl.textContent = '--'; statusEl.innerHTML = '&nbsp;'; return; }
+
+            const bmi = Math.round(w / ((h / 100) ** 2) * 10) / 10;
+            let status, color;
+            if (bmi < 18.5)      { status = '저체중'; color = '#38bdf8'; }
+            else if (bmi < 23)   { status = '정상';   color = '#4ade80'; }
+            else if (bmi < 25)   { status = '과체중'; color = '#facc15'; }
+            else                 { status = '비만';   color = '#f87171'; }
+
+            bmiEl.textContent = bmi;
+            statusEl.textContent = status;
+            statusEl.style.color = color;
+
+            // BMI 15~35를 바 0~100%에 대응 (18.5 → 17.5%, 23 → 40%, 25 → 50%)
+            const pos = Math.min(Math.max((bmi - 15) / 20, 0), 1) * 100;
+            marker.style.left = pos + '%';
+        }
+
+        pairs.forEach(({ num, range }) => {
+            range.addEventListener('input', () => { num.value = range.value; fill(range); preview(); });
+            num.addEventListener('input', () => {
+                if (num.value !== '') { range.value = num.value; fill(range); }
+                preview();
+            });
+            fill(range);
+        });
+        preview();
+    </script>
+</body>
+</html>
